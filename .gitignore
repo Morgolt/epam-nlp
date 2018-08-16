@@ -1,0 +1,11 @@
+data/
+*.csv
+*.tsv
+
+__pycache__/
+*.py[cod]
+*$py.class
+__pyc__
+
+.idea/
+*.iml
