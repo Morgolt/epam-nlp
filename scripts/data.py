@@ -1,45 +1,43 @@
 from pathlib import Path
+from typing import Tuple
 
+import numpy as np
 import pandas as pd
 from seqlearn.evaluation import SequenceKFold
 
-SEQUENCE = ['document', 'part']
-TARGET = 'ner'
+SEQUENCE = ('document', 'part')
+TARGET = 'iob_ner'
 
 
-def load_data(path: Path, nrows=None):
-    df = pd.read_csv(path, delimiter='\t', nrows=nrows, header=0)
-    df['ner'] = df.ner.str.slice(0, 3)
-    df['sentence_number'] = df['position'] // 1000
-    # todo: sequence
-    df['seq'] = df['']
+def load_data(path: Path, nrows=None, grouper=SEQUENCE) -> pd.DataFrame:
+    df = pd.read_csv(path, delimiter='\t', nrows=nrows)
+    df['sentence'] = df['sentence'] + 1
+    df['seq'] = df.groupby(list(grouper)).grouper.group_info[0]
     df = df.astype('category')
     return df
 
 
-def get_X_y_lengths(df: pd.DataFrame, cols_to_drop=None, sequence_column=SEQUENCE, one_hot=False):
+def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', target=TARGET, one_hot=False):
     if isinstance(sequence_column, str):
         sequence_column = [sequence_column]
-    if cols_to_drop is None:
-        cols_to_drop = []
-    y = df.ner.values.codes.copy()
+    if cols_to_keep is None:
+        cols_to_keep = {}
+    y = df[target].cat.codes.values.copy()
     lengths = df.groupby(sequence_column, sort=False).count().iloc[:, 0].values
-    if TARGET not in cols_to_drop:
-        cols_to_drop.append(TARGET)
+    if target in cols_to_keep:
+        cols_to_keep.remove(target)
+    cols_to_drop = set(df.columns) - cols_to_keep
     X = df.drop(cols_to_drop, axis=1)
     if one_hot:
         X = pd.get_dummies(X).values
     else:
-        X = X.values
+        X = X.values if X.shape[1] > 1 else np.ravel(X.values)
 
     return X, y, lengths
 
 
-def get_cv(df, n_folds=5, cols_to_drop=None, one_hot=False):
-    if cols_to_drop is None:
-        cols_to_drop = []
-    X, y, lengths = get_X_y_lengths(df, cols_to_drop, SEQUENCE, one_hot=one_hot)
-    if not set(SEQUENCE).issubset(set(df.columns)):
+def get_cv(X: np.ndarray, y: np.ndarray, lengths=None, n_folds=5):
+    if lengths is None:
         lengths = X.shape[0]
     kf = SequenceKFold(lengths=lengths, n_folds=n_folds)
     for (train_ind, train_lengths, test_ind, test_lengths) in kf:
@@ -48,7 +46,7 @@ def get_cv(df, n_folds=5, cols_to_drop=None, one_hot=False):
 
 if __name__ == '__main__':
     DATA_PATH = Path('../data')
-    RAW_DATA_PATH = DATA_PATH / 'raw.tsv'
-    df = load_data(RAW_DATA_PATH, nrows=1000)
-    X, y, lengths = get_X_y_lengths(df, ['position', 'pos', 'ner', 'part', 'document'])
-    cv = get_cv(df, cols_to_drop=['position', 'pos', 'ner', 'part', 'document'])
+    PROCESSED = DATA_PATH / 'processed.tsv'
+    df = load_data(PROCESSED, nrows=1000)
+    X, y, lengths = get_X_y_lengths(df, {'token'})
+    cv = get_cv(X, y, lengths=lengths)
