@@ -9,3 +9,5 @@ __pyc__
 
 .idea/
 *.iml
+
+.ipynb_checkpoints/

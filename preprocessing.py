@@ -9,20 +9,23 @@ def load_data(path):
     for part in path.iterdir():
         for doc in part.iterdir():
             print(doc)
-            with (doc / 'en.tags').open('r', encoding='utf-8') as fh:
-                content = fh.read().strip()
-                sentences = content.split('\n\n')
-                for ind, sent in enumerate(sentences):
-                    tokens = pd.read_csv(StringIO(sent), sep='\t', header=None, quoting=3,
-                                         names=['token', 'pos', 'lemma', 'ner', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6'])
-                    # parse only first part of NER tag
-                    tokens['ner'] = tokens.ner.str.split('-').str[0]
-                    tokens = to_conll_iob(tokens)
-                    tokens['part'] = part.parts[-1]
-                    tokens['document'] = doc.parts[-1]
-                    tokens['sentence'] = ind
-                    res.append(tokens)
-                    del tokens
+            with (doc / 'en.met').open('r', encoding='utf-8') as fh:
+                is_voa = 'Voice of America' in fh.read()
+            if is_voa:
+                with (doc / 'en.tags').open('r', encoding='utf-8') as fh:
+                    content = fh.read().strip()
+                    sentences = content.split('\n\n')
+                    for ind, sent in enumerate(sentences):
+                        tokens = pd.read_csv(StringIO(sent), sep='\t', header=None, quoting=3,
+                                             names=['token', 'pos', 'lemma', 'ner', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6'])
+                        # parse only first part of NER tag
+                        tokens['ner'] = tokens.ner.str.split('-').str[0]
+                        tokens = to_conll_iob(tokens)
+                        tokens['part'] = part.parts[-1]
+                        tokens['document'] = doc.parts[-1]
+                        tokens['sentence'] = ind
+                        res.append(tokens)
+                        del tokens
     df = pd.concat(res)
     return df
 
@@ -54,6 +57,6 @@ if __name__ == '__main__':
     RAW_DATA_PATH = Path('./gmb-2.2.0 - Copy/data')
     DATA_PATH = Path('./data')
     df = load_data(RAW_DATA_PATH)
-    df.to_csv(DATA_PATH / 'processed.tsv', sep='\t', header=True, index=False, columns=['token', 'pos', 'lemma',
+    df.to_csv(DATA_PATH / 'processed_voa.tsv', sep='\t', header=True, index=False, columns=['token', 'pos', 'lemma',
                                                                                         'iob_ner', 'part', 'document',
                                                                                         'sentence'])
