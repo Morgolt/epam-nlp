@@ -1,11 +1,14 @@
+import string
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from nltk.corpus import stopwords
 from seqlearn.evaluation import SequenceKFold
 
 SEQUENCE = ('document', 'part')
 TARGET = 'iob_ner'
+PUNCTUATION = pd.Series(list(string.punctuation))
 
 
 def load_data(path: Path, nrows=None, grouper=SEQUENCE) -> pd.DataFrame:
@@ -14,6 +17,10 @@ def load_data(path: Path, nrows=None, grouper=SEQUENCE) -> pd.DataFrame:
     df['seq'] = df.groupby(list(grouper)).grouper.group_info[0]
     df = df.astype('category')
     return df
+
+
+def get_utility_token_index(tokens, punctuation=PUNCTUATION):
+    return tokens.isin(punctuation) | tokens.isin(stopwords.words('english'))
 
 
 def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', target=TARGET, one_hot=False):
