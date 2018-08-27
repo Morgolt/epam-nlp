@@ -54,9 +54,10 @@ def to_conll_iob(df: pd.DataFrame):
 
 
 if __name__ == '__main__':
-    RAW_DATA_PATH = Path('./gmb-2.2.0 - Copy/data')
-    DATA_PATH = Path('./data')
+    RAW_DATA_PATH = Path('../gmb-2.2.0 - Copy/data')
+    DATA_PATH = Path('../data')
     df = load_data(RAW_DATA_PATH)
     df.to_csv(DATA_PATH / 'processed_voa.tsv', sep='\t', header=True, index=False, columns=['token', 'pos', 'lemma',
-                                                                                        'iob_ner', 'part', 'document',
-                                                                                        'sentence'])
+                                                                                            'iob_ner', 'part',
+                                                                                            'document',
+                                                                                            'sentence'])

@@ -1,8 +1,9 @@
 import numpy as np
 from hmmlearn.base import _BaseHMM
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils import check_array
 from sklearn.utils import check_random_state
-from sklearn.naive_bayes import MultinomialNB
+
 
 def count_transitions(y):
     num_state = np.unique(y).shape[0]
