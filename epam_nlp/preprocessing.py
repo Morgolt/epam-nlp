@@ -49,7 +49,7 @@ def to_conll_iob(df: pd.DataFrame):
         prev_row = row
 
     df['iob_ner'] = result
-    df.drop('ner', axis=1, inplace=True)
+    # df.drop('ner', axis=1, inplace=True)
     return df
 
 
@@ -57,7 +57,5 @@ if __name__ == '__main__':
     RAW_DATA_PATH = Path('../gmb-2.2.0 - Copy/data')
     DATA_PATH = Path('../data')
     df = load_data(RAW_DATA_PATH)
-    df.to_csv(DATA_PATH / 'processed_voa.tsv', sep='\t', header=True, index=False, columns=['token', 'pos', 'lemma',
-                                                                                            'iob_ner', 'part',
-                                                                                            'document',
-                                                                                            'sentence'])
+    df.to_csv(DATA_PATH / 'processed_voa.tsv', sep='\t', header=True, index=False,
+              columns=['token', 'pos', 'lemma', 'part', 'document', 'sentence', 'ner', 'iob_ner'])
