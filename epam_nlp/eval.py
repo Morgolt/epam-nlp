@@ -19,4 +19,5 @@ def int_to_str(y_true, y_pred, label_mapping):
 
 def get_report(y_true, y_pred, label_mapping):
     str_true, str_pred = int_to_str(y_true, y_pred, label_mapping)
-    return flat_classification_report(y_pred=str_pred, y_true=str_true)
+    return flat_classification_report(y_pred=y_pred.reshape(-1, 1), y_true=y_true.reshape(-1, 1),
+                                      labels=np.unique(y_true))

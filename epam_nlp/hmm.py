@@ -1,16 +1,11 @@
 import numpy as np
 from hmmlearn.base import _BaseHMM
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.utils import check_array
 from sklearn.utils import check_random_state
 
+from .util import entity_to_idx
 
-def count_transitions(y):
-    num_state = np.unique(y).shape[0]
-    result = np.zeros((num_state, num_state), dtype=np.uint32)
-    for i in range(y.shape[0] - 1):
-        result[y[i], y[i + 1]] += 1
-    return result
+UNKNOWN = '<UNK>'
 
 
 def compute_transition_probs(trans_counts, smoothing=None, alpha=0.01):
@@ -35,18 +30,6 @@ def compute_emission_probs_ohe(X, y, smoothing=None, alpha=0.01):
     return np.divide(counts, div, where=div != 0)
 
 
-def compute_emission_probs(X, y, smoothing=None, alpha=0.01):
-    num_features = np.unique(X).shape[0]
-    num_classes = np.unique(y).shape[0]
-    result = np.zeros((num_classes, num_features))
-    for word, tag in zip(X, y):
-        result[tag, word] += 1
-    if smoothing == 'add' and alpha is not None:
-        result = result + alpha
-    div = result.sum(axis=0)
-    return np.divide(result, div, where=div != 0)
-
-
 def compute_init_probs(y):
     _, counts = np.unique(y, return_counts=True)
     return counts / y.shape[0]
@@ -65,6 +48,14 @@ def compute_emission_naive(X, y, prior=None):
     return np.exp(nb.coef_)
 
 
+def count_transitions(y):
+    num_state = len(np.unique(y))
+    result = np.zeros((num_state, num_state), dtype=np.uint32)
+    for i in range(y.shape[0] - 1):
+        result[y[i], y[i + 1]] += 1
+    return result
+
+
 class CustomHMM(_BaseHMM):
     def __init__(self, n_components=1, startprob_prior=1.0, transmat_prior=1.0, algorithm="viterbi", random_state=None,
                  n_iter=10, tol=1e-2, verbose=False, params=""):
@@ -75,7 +66,7 @@ class CustomHMM(_BaseHMM):
         if self.params != "" or y is None:
             raise Exception("This implementation is for supervised mode.")
 
-        X = check_array(X)
+        self.word_mapping = entity_to_idx(X)
 
         self._fit_multinomial(X, y, smoothing)
 
@@ -84,10 +75,8 @@ class CustomHMM(_BaseHMM):
         trans_counts = count_transitions(y)
         trans_probs = compute_transition_probs(trans_counts, smoothing=smoothing)
 
-        if is_ohe(X):
-            emiss_probs = compute_emission_probs_ohe(X, y, smoothing=smoothing)
-        elif X.shape[1] == 1:
-            emiss_probs = compute_emission_probs(X, y, smoothing=smoothing)
+        if X.ndim == 1:
+            emiss_probs = self.compute_emission_probs(X, y, smoothing=smoothing)
         else:
             emiss_probs = compute_emission_naive(X, y)
 
@@ -103,6 +92,23 @@ class CustomHMM(_BaseHMM):
         cdf = np.cumsum(self.emissionprob_[state, :])
         random_state = check_random_state(random_state)
         return [(cdf > random_state.rand()).argmax()]
+
+    def compute_emission_probs(self, X, y, smoothing=None, alpha=0.01):
+        num_features = len(self.word_mapping.keys()) + 1
+        num_classes = len(np.unique(y))
+        result = np.zeros((num_classes, num_features))
+        for word, tag_idx in zip(X, y):
+            word_idx = self.word_mapping[word]
+            result[tag_idx, word_idx] += 1
+        if smoothing == 'add' and alpha is not None:
+            result = result + alpha
+        div = result.sum(axis=0)
+        return np.divide(result, div, where=div != 0)
+
+    def predict(self, X, lengths=None):
+        if X.ndim == 1:
+            X = np.array([self.word_mapping[word] for word in X]).reshape(-1, 1)
+        return super().predict(X, lengths)
 
 
 if __name__ == '__main__':

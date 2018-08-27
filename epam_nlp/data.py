@@ -2,7 +2,6 @@ import string
 from pathlib import Path
 
 import nltk
-import numpy as np
 import pandas as pd
 from nltk.corpus import stopwords
 from seqlearn.evaluation import SequenceKFold
@@ -43,8 +42,7 @@ def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', 
     if one_hot:
         X = pd.get_dummies(X).values
     else:
-        X = X.values if X.shape[1] > 1 else X.iloc[:, 0].cat.codes.values
-
+        X = X.values if X.shape[1] > 1 else X.iloc[:, 0].values.get_values()
     return X, y, lengths
 
 
