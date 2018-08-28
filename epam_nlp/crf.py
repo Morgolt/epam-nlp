@@ -50,6 +50,15 @@ def get_features(df: pd.DataFrame, seq=('part', 'document')):
     return data, y, labels
 
 
+def load_crf_features(bin_feat: Path, csv_path=None):
+    if not bin_feat.exists():
+        df = pd.read_csv(csv_path)
+        data = get_features(df)
+        joblib.dump(data, bin_feat)
+    features, y, labels = joblib.load(bin_feat)
+    return features, y, labels
+
+
 if __name__ == '__main__':
     PATH = Path('../data') / 'basic_processing.csv'
     CRF_FEATURES = PATH / '..' / 'crf_features_bin'

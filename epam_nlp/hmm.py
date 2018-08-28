@@ -3,7 +3,7 @@ from hmmlearn.base import _BaseHMM
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils import check_random_state
 
-from .util import entity_to_idx
+from util import entity_to_idx
 
 UNKNOWN = '<UNK>'
 
@@ -66,7 +66,8 @@ class CustomHMM(_BaseHMM):
         if self.params != "" or y is None:
             raise Exception("This implementation is for supervised mode.")
 
-        self.word_mapping = entity_to_idx(X)
+        if X.dtype == object:
+            self.word_mapping = entity_to_idx(X)
 
         self._fit_multinomial(X, y, smoothing)
 

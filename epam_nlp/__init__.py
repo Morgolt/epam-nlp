@@ -8,3 +8,4 @@ from .data import (
 from .util import get_wordcloud, entity_to_idx
 from .hmm import CustomHMM
 from .eval import get_bio_f1, get_report
+from .crf import load_crf_features
