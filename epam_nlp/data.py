@@ -3,7 +3,9 @@ from pathlib import Path
 
 import nltk
 import pandas as pd
+import numpy as np
 from nltk.corpus import stopwords
+from scipy.sparse import csr_matrix
 from seqlearn.evaluation import SequenceKFold
 
 SEQUENCE = ('document', 'part')
@@ -40,7 +42,7 @@ def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', 
     cols_to_drop = set(df.columns) - cols_to_keep
     X = df.drop(cols_to_drop, axis=1)
     if one_hot:
-        X = pd.get_dummies(X).values
+        X = csr_matrix(pd.get_dummies(X, sparse=True).to_coo())
     else:
         X = X.values if X.shape[1] > 1 else X.iloc[:, 0].values.get_values()
     return X, y, lengths
@@ -48,7 +50,7 @@ def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', 
 
 def get_cv(lengths=None, seed=42, shuffle=True, n_folds=5, yield_lengths=False):
     if lengths is None:
-        lengths = X.shape[0]
+        lengths = np.ones(X.shape[0])
     kf = SequenceKFold(lengths=lengths,
                        n_folds=n_folds,
                        random_state=seed,
