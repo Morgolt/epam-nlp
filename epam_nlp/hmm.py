@@ -2,8 +2,9 @@ import numpy as np
 from hmmlearn.base import _BaseHMM
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.utils import check_random_state
+from sklearn.utils.extmath import safe_sparse_dot
 
-from util import entity_to_idx
+from .util import entity_to_idx
 
 UNKNOWN = '<UNK>'
 
@@ -87,7 +88,22 @@ class CustomHMM(_BaseHMM):
         self.emissionprob_ = emiss_probs
 
     def _compute_log_likelihood(self, X):
-        return np.log(self.emissionprob_)[:, np.concatenate(X)].T
+        # return X.dot(np.log(self.emissionprob_.T))
+        # return np.log(self.emissionprob_)[:, np.concatenate(X)].T
+
+        n_classes, n_features = self.emissionprob_.shape
+        n_samples, n_features_X = X.shape
+
+        if n_features_X != n_features:
+            raise ValueError("Expected input with %d features, got %d instead"
+                             % (n_features, n_features_X))
+
+        neg_prob = np.log(1 - self.emissionprob_)
+        # Compute  neg_prob · (1 - X).T  as  ∑neg_prob - X · neg_prob
+        jll = safe_sparse_dot(X, (np.log(self.emissionprob_) - neg_prob).T)
+        jll += neg_prob.sum(axis=1)
+
+        return jll
 
     def _generate_sample_from_state(self, state, random_state=None):
         cdf = np.cumsum(self.emissionprob_[state, :])
