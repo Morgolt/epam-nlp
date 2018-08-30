@@ -63,23 +63,27 @@ if __name__ == '__main__':
     PATH = Path('../data') / 'basic_processing.csv'
     CRF_FEATURES = PATH / '..' / 'crf_features_bin'
     SEED = 42
-    if not CRF_FEATURES.exists():
-        df = pd.read_csv(PATH)
-        data = get_features(df)
-        joblib.dump(data, CRF_FEATURES)
-    features, y, labels = joblib.load(CRF_FEATURES)
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
-    crf = sklearn_crfsuite.CRF(algorithm='lbfgs', max_iterations=100, all_possible_transitions=True)
-    params = {'c1': [0.01], 'c2': [0.01]}
-    # todo: bio-scorer, analysis of output
-    f1_scorer = make_scorer(metrics.flat_f1_score, average='weighted', labels=labels)
-    # search
-    rs = GridSearchCV(crf,
-                      params,
-                      cv=5,
-                      verbose=1,
-                      n_jobs=-1,
-                      scoring=f1_scorer)
-    rs.fit(features, y)
-    print('best params:', rs.best_params_)
-    print('best CV score:', rs.best_score_)
+    df = pd.read_csv(PATH)
+    data = get_features(df)
+
+    pd.DataFrame.from_dict(data[0])
+    # if not CRF_FEATURES.exists():
+    #     df = pd.read_csv(PATH)
+    #     data = get_features(df)
+    #     joblib.dump(data, CRF_FEATURES)
+    # features, y, labels = joblib.load(CRF_FEATURES)
+    # cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
+    # crf = sklearn_crfsuite.CRF(algorithm='lbfgs', max_iterations=100, all_possible_transitions=True)
+    # params = {'c1': [0.01], 'c2': [0.01]}
+    # # todo: bio-scorer, analysis of output
+    # f1_scorer = make_scorer(metrics.flat_f1_score, average='weighted', labels=labels)
+    # # search
+    # rs = GridSearchCV(crf,
+    #                   params,
+    #                   cv=5,
+    #                   verbose=1,
+    #                   n_jobs=-1,
+    #                   scoring=f1_scorer)
+    # rs.fit(features, y)
+    # print('best params:', rs.best_params_)
+    # print('best CV score:', rs.best_score_)

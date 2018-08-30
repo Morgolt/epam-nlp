@@ -1,9 +1,10 @@
+import re
 import string
 from pathlib import Path
 
 import nltk
-import pandas as pd
 import numpy as np
+import pandas as pd
 from nltk.corpus import stopwords
 from scipy.sparse import csr_matrix
 from seqlearn.evaluation import SequenceKFold
@@ -57,6 +58,12 @@ def get_cv(lengths=None, seed=42, shuffle=True, n_folds=5, yield_lengths=False):
                        shuffle=shuffle,
                        yield_lengths=yield_lengths)
     return kf
+
+
+def word_shape(word):
+    t1 = re.sub('[A-Z]', 'X', word)
+    t2 = re.sub('[a-z]', 'x', t1)
+    return re.sub('[0-9]', 'd', t2)
 
 
 if __name__ == '__main__':
