@@ -31,7 +31,8 @@ def get_stem(tokens: pd.Series):
     return tokens.map(lambda t: stemmer.stem(t))
 
 
-def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', target=TARGET, one_hot=False):
+def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', target=TARGET, one_hot=False,
+                    transformer=None):
     if isinstance(sequence_column, str):
         sequence_column = [sequence_column]
     if cols_to_keep is None:
@@ -42,7 +43,9 @@ def get_X_y_lengths(df: pd.DataFrame, cols_to_keep=None, sequence_column='seq', 
         cols_to_keep.remove(target)
     cols_to_drop = set(df.columns) - cols_to_keep
     X = df.drop(cols_to_drop, axis=1)
-    if one_hot:
+    if transformer is not None:
+        return transformer.fit_transform(X.values), y, lengths, transformer
+    elif one_hot:
         X = csr_matrix(pd.get_dummies(X, sparse=True).to_coo())
     else:
         X = X.values if X.shape[1] > 1 else X.iloc[:, 0].values.get_values()

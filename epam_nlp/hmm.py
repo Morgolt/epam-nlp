@@ -1,6 +1,7 @@
 import gc
 
 import numpy as np
+import sklearn
 from hmmlearn.base import _BaseHMM
 from scipy.sparse import issparse
 from sklearn.naive_bayes import MultinomialNB
@@ -8,8 +9,6 @@ from sklearn.utils import check_random_state
 
 from .eval import get_bio_f1
 from .util import entity_to_idx
-
-UNKNOWN = '<UNK>'
 
 
 def compute_transition_probs(trans_counts, smoothing=None, alpha=0.01):
@@ -19,21 +18,32 @@ def compute_transition_probs(trans_counts, smoothing=None, alpha=0.01):
     return np.divide(trans_counts, div, where=div != 0)
 
 
-def hmm_cv(X, y, cv, target_mapping):
+def hmm_cv(X, y, cv, target_mapping, transformer=None, verbose=0):
     scores = []
     i = 1
+    num_classes = len(np.unique(y))
     for (train_ind, train_len, test_ind, test_len) in cv:
-        hmm = CustomHMM()
+        hmm = CustomHMM(n_components=num_classes)
         x_train = X[train_ind]
         y_train = y[train_ind]
+        if transformer is not None:
+            current_transformer = sklearn.base.clone(transformer)
+            x_train = current_transformer.fit_transform(x_train)
         hmm.fit(x_train, y=y_train, smoothing='add')
 
         x_test = X[test_ind]
+        if transformer is not None:
+            x_test = current_transformer.transform(x_test)
         y_test = y[test_ind]
-        y_pred = hmm.predict(x_test.toarray())
+        if issparse(x_test):
+            y_pred = hmm.predict(x_test.toarray())
+        else:
+            y_pred = hmm.predict(x_test)
 
         f1 = get_bio_f1(y_test, y_pred, target_mapping)
-        print(f"Fold {i} f1: {f1}")
+        if verbose > 0:
+            print(f"Fold {i} score: {f1}")
+        i += 1
         scores.append(f1)
 
         del x_train
@@ -41,8 +51,10 @@ def hmm_cv(X, y, cv, target_mapping):
         del x_test
         del y_test
         del y_pred
+        del current_transformer
         gc.collect()
-    print(f"AVG cross-validation f1 score: {np.mean(scores)}")
+    if verbose > 0:
+        print(f"AVG cross-validation f1 score: {np.mean(scores)}")
     return scores
 
 
@@ -76,10 +88,11 @@ class CustomHMM(_BaseHMM):
         self.emissionprob_ = emiss_probs
 
     def _compute_log_likelihood(self, X):
-        if self.nb is None:
-            return X.dot(np.log(self.emissionprob_.T))
-        else:
+        pass
+        if hasattr(self, 'nb'):
             return self.nb.predict_log_proba(X)
+        else:
+            return X.dot(np.log(self.emissionprob_.T))
 
     def _generate_sample_from_state(self, state, random_state=None):
         cdf = np.cumsum(self.emissionprob_[state, :])

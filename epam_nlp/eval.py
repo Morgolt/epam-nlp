@@ -10,6 +10,16 @@ def get_bio_f1(y_true, y_pred, label_mapping=None):
     return fscore
 
 
+def bio_f1_crf(y_true, y_pred):
+    y_true = flatten_y(y_true)
+    y_pred = flatten_y(y_pred)
+    return bio_f_score(y_true, y_pred)
+
+
+def flatten_y(y):
+    return [item for sublist in y for item in sublist]
+
+
 def int_to_str(y_true, y_pred, label_mapping=None):
     if isinstance(y_true, list):
         y_true = np.array(y_true).flatten()
